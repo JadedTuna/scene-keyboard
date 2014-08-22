@@ -1,9 +1,9 @@
 from scene import *
-from keyboard.layout import *
-from keyboard import ipadlayout as ipad
-from keyboard import Keyboard
+import keyboard
+reload(keyboard) # Needed on iOS
+ipad = keyboard.ipadlayout
 
-class MyKeyboard(Keyboard):
+class MyKeyboard(keyboard.Keyboard):
     def setup(self):
         print "MyKeyboard created!"
     
