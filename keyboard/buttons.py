@@ -63,7 +63,7 @@ class TextButton(object):
         self.dfg, self.pfg = fgcolours # Default fg and pressed fg
         self.shade_colour  = DSHADE_COLOUR
         self.drawbg        = self.dbg
-        self.drawfg        = None
+        self.drawfg        = self.dfg
         self.drawbounds    = None
         
         self.drawfunc  = lambda x, y, w, h: shaded_rect(x, y, w, h, self.drawbg, self.shade_colour)
@@ -73,8 +73,6 @@ class TextButton(object):
         self.fontfam   = fontfamily
         self.fontsize  = fontsize
         self.value     = value
-        self.dmgid     = None # Default image ID
-        self.pmgid     = None # Pressed image ID
         
         self.touch_id  = None
         self.parent    = None
@@ -91,19 +89,14 @@ class TextButton(object):
                             y + self.parent.bounds.y,
                             w,
                             h)
-        tint(*self.dfg)
-        self.dmgid      = render_text(self.text, "Arial", self.fontsize)[0]
-        tint(*self.pfg)
-        self.pmgid, s   = render_text(self.text, "Arial", self.fontsize)
-        self.drawfg     = self.dmgid
         self.action     = self.action if self.action else parent.daction
-        self.textpos.x -= s.w/2.
-        self.textpos.y -= s.h/2.
     
     def draw(self):
         fill(*self.drawbg) # This is needed incase some other drawing functions is used
         self.drawfunc(*self.drawbounds)
-        image(self.drawfg, *self.textpos)
+        x, y = self.textpos
+        tint(*self.drawfg)
+        text(self.text, self.fontfam, self.fontsize, x, y)
     
     def hit_test(self, point):
         return point in self.bounds
@@ -112,22 +105,22 @@ class TextButton(object):
         if not self.touch_id:
             self.touch_id = touch.touch_id
             self.drawbg   = self.pbg
-            self.drawfg   = self.pmgid
+            self.drawfg   = self.pfg
     
     def touch_moved(self, touch):
         if touch.touch_id == self.touch_id:
             if touch.location in self.bounds:
                 self.drawbg = self.pbg
-                self.drawfg = self.pmgid
+                self.drawfg = self.pfg
             else:
                 self.drawbg = self.dbg
-                self.drawfg = self.dmgid
+                self.drawfg = self.dfg
 
     def touch_ended(self, touch):
         if touch.touch_id == self.touch_id:
             self.touch_id = None
             self.drawbg   = self.dbg
-            self.drawfg   = self.dmgid
+            self.drawfg   = self.dfg
             if touch.location in self.bounds:
                 self.clicked()
     
