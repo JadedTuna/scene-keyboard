@@ -1,70 +1,130 @@
-from scene import *
+__all__ = ["Layout"]
 
-#####################################################################################
-# Classes
-#####################################################################################
+from buttons import TextButton
+from scene   import *
 
-#####################################################################################
-#
-# Keyboard
-#
-#####################################################################################
+BDBG = (1.0, 1.0, 1.0) # Button Default BackGround
+BPBG = (0.8, 0.8, 0.8) # Button Pressed BackGround
 
-class Keyboard(object):
-    def __init__(self, scrsize, pos=Point(0, 0)):
-        self.size    = (scrsize.w, scrsize.h/2.)
-        self.bounds  = Rect(pos.x, pos.y, *self.size)
-        self.bg      = (0.8118, 0.8235, 0.8353)
-        self.layouts = {}
-        self.clayout = None
-        self.daction = lambda text: None
-        self.scrsize = scrsize
-        self.setup()
+SDBG = (0.73, 0.74, 0.76) # Special button Default BackGround
+SPBG = (1.0, 1.0, 1.0) # Special button Default BackGround
+
+TDFG = (0.0, 0.0, 0.0) # Text Default ForeGround
+TPFG = (0.0, 0.0, 0.0) # Text Pressed ForeGround
+
+
+class Layout(object):
+    """
+    Represents a layout for keyboard.
+    """
+    def __init__(self):
+        self.keyboard = None
+        self.buttons  = []
+        self.ids      = []
+        self.daction  = None
+        self.dsize    = Size(10, 10)
     
-    def setup(self):
+    def newID(self):
         """
-        This method will be called after __init__ method.
+        Returns a new, unused ID.
         """
-        pass
+        for id in self.ids:
+            if not id + 1 in self.ids:
+                return id + 1
     
-    def addLayout(self, name, layout):
-        self.layouts[name] = layout
-        self.layouts[name].init(self)
+    def setDefaultSize(self, size):
+        if not isinstance(size, Size):
+            size = Size(*size)
+        self.dsize = size
     
-    def setLayout(self, name, layout=None):
-        if layout:
-            self.addLayout(name, layout)
-        self.clayout = name
-        self.size = self.layouts[self.clayout].kbd_size()
-        self.bounds.w, self.bounds.h = self.size
-    
-    def setDefaultAction(self, action):
-        self.daction = action
+    def addTextButton(self,
+                        text,
+                        value,
+                        pos,
+                        size=None,
+                        bgcolours=[BDBG, BPBG],
+                        fgcolours=[TDFG, TPFG],
+                        fontfamily="Arial",
+                        fontsize=28,
+                        action=None,
+                        id=-1):
+        """
+        Add a TextButton to layout.
         
-    def draw(self):
-        fill(*self.bg)
-        rect(*self.bounds)
-        for button in self.layouts[self.clayout].buttons:
-            button.draw()
-    
-    def touch_began(self, touch):
-        for button in self.layouts[self.clayout].buttons:
-            if touch.location in button.bounds:
-                button.touch_began(touch)
-                return
-    
-    def touch_moved(self, touch):
-        for button in self.layouts[self.clayout].buttons:
-            button.touch_moved(touch)
-    
-    def touch_ended(self, touch):
-        for button in self.layouts[self.clayout].buttons:
-            if touch.location in button.bounds:
-                button.touch_ended(touch)
-                return
-
-    def init(self):
+        text       --> button text
+        value      --> button value (will be used with action func)
+        pos        --> button position
+        size       --> button size
+        bgcolours  --> a list of length 2 with backround colours for two modes:
+                            default and pressed.
+        fgcolours  --> a list of length 2 with foreground colours for two modes:
+                            default and pressed.
+        fontfamily --> font family used to render button's text
+        fontsize   --> font size used to render button's text
+        action     --> function to be executed when button is clicked
+        id         --> button ID
         """
-        This method should be called before keyboard is used.
+        if not size:
+            size = self.dsize
+        
+        if not isinstance(pos, Point):
+            pos = Point(*pos)
+        if not isinstance(size, Size):
+            size = Size(*size)
+        
+        if id == -1:
+            id = self.newID()
+        button = TextButton(text,
+                            value,
+                            pos,
+                            size,
+                            bgcolours,
+                            fgcolours,
+                            fontfamily,
+                            fontsize,
+                            action,
+                            id)
+        self.buttons.append(button)
+    
+    def addSpecialTextButton(self,
+                                text,
+                                value,
+                                pos,
+                                size=None,
+                                fontfamily="Arial",
+                                fontsize=28,
+                                action=None,
+                                id=-1):
         """
-        pass
+        Add a special TextButton to layout.
+        Basically just adds a TextButton
+            with different bg and fg colours.
+        """
+        return self.addTextButton(text,
+                                    value,
+                                    pos,
+                                    size,
+                                    [SDBG, SPBG],
+                                    [TDFG, TPFG],
+                                    fontfamily,
+                                    fontsize,
+                                    action,
+                                    id)
+    
+    def getButtonByID(self, id):
+        for button in self.buttons:
+            if button.button_id == id:
+                return button
+    
+    def init(self, keyboard):
+        """
+        This method inits all buttons.
+        It is called automatically by Keyboard class.
+        """
+        self.keyboard = keyboard
+        self.daction  = keyboard.daction
+        for button in self.buttons:
+            button.init(self.keyboard)
+    
+    def kbd_size(self):
+        return Size(0, 0)
